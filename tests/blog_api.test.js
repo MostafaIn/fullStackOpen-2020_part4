@@ -39,4 +39,12 @@ test('The blog list application returns the correct amount of blog posts in the 
   expect(res.body).toHaveLength(initialBlogs.length)
 })
 
+test('the unique identifier property of the blog posts is named id, by default the database names the property _id.', async () => {
+  const res = await api.get('/api/blogs')
+  res.body.forEach( blog => {
+    expect(blog.id).toBeDefined()
+    expect(blog._id).not.toBeDefined()
+  })
+})
+
 afterAll(() => mongoose.connection.close())
