@@ -63,6 +63,23 @@ describe('BLOG API', () => {
     const titles = blogsAtEnd.map(blog => blog.title)
     expect(titles).toContain('Adjusting to Increased Digital Communication Since the Pandemic')
   })
+
+  test('The likes property is missing from the request, it will default to the value 0.', async () => {
+    const newBlog = {
+      title: 'How Managing My Mental Illness Changed My Life After Graduation',
+      author: 'Amanda Jerelyn',
+      url: 'https://www.studentmindsblog.co.uk/search?updated-max=2020-07-06T12:30:00%2B01:00&max-results=2',
+    }
+
+    const res = await api.post('/api/blogs')
+      .send(newBlog)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    const likes = res.body.likes
+    expect(likes).toBe(0)
+
+  })
 })
 
 afterAll(() => mongoose.connection.close())
