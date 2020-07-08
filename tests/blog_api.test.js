@@ -80,6 +80,18 @@ describe('BLOG API', () => {
     expect(likes).toBe(0)
 
   })
+
+  test('The title and url properties are missing from the request data', async () => {
+    const newBlog = {
+      author:'mostafa',
+      likes: 1
+    }
+
+    await api.post('/api/blogs')
+      .send(newBlog)
+      .expect(400)
+      .expect('Content-Type', /application\/json/)
+  })
 })
 
 afterAll(() => mongoose.connection.close())
