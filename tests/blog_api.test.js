@@ -2,48 +2,66 @@
 /* eslint-disable no-undef */
 const mongoose = require('mongoose')
 const supertest = require('supertest')
+const helper = require('./test_helper')
 const app = require('../app')
 
 const api = supertest(app)
 const Blog = require('../models/Blog')
 
-const initialBlogs = [
-  {
-    'title': 'My Exercise with Exercise During Lockdown',
-    'author': 'Lizzie Speller',
-    'url': 'https://https://www.studentmindsblog.co.uk/',
-    'likes': 10
-  },
-  {
-    'title': 'Alternative Activities to Look After Your Wellbeing in Lockdown',
-    'author': 'Hannah Chow',
-    'url': 'https://https://www.studentmindsblog.co.uk/',
-    'likes': 5
-  }
-
-]
 
 beforeEach( async () => {
   await Blog.deleteMany({})
 
-  let blogObj = new Blog(initialBlogs[0])
-  await blogObj.save()
-
-  blogObj = new Blog(initialBlogs[1])
-  await blogObj.save()
+  for(let blogObj of helper.initialBlogs){
+    await new Blog(blogObj).save()
+  }
 })
 
-test('The blog list application returns the correct amount of blog posts in the JSON format.', async () => {
-  const res = await api.get('/api/blogs')
+describe('BLOG API', () => {
+  test('The blog list application returns the correct amount of blog posts in the JSON format.', async () => {
+    const res = await api.get('/api/blogs')
 
-  expect(res.body).toHaveLength(initialBlogs.length)
-})
+    expect(res.body).toHaveLength(helper.initialBlogs.length)
+  })
 
-test('the unique identifier property of the blog posts is named id, by default the database names the property _id.', async () => {
-  const res = await api.get('/api/blogs')
-  res.body.forEach( blog => {
-    expect(blog.id).toBeDefined()
-    expect(blog._id).not.toBeDefined()
+  test('the unique identifier property of the blog posts is named id, by default the database names the property _id.', async () => {
+    const res = await api.get('/api/blogs')
+    res.body.forEach( blog => {
+      expect(blog.id).toBeDefined()
+      expect(blog._id).not.toBeDefined()
+    })
+  })
+
+  test('Blog without title, author or url is not added', async () => {
+    const newBlog = {
+      likes: 10
+    }
+    await api.post('/api/blogs')
+      .send(newBlog)
+      .expect(400)
+
+    const blogsAtEnd = await helper.blogsInDB()
+    expect(blogsAtEnd).toHaveLength(helper.initialBlogs.length)
+  })
+
+  test('successfully creates a new blog post & the total number of blogs in the system is increased by one', async () => {
+    const newBlog = {
+      title: 'Adjusting to Increased Digital Communication Since the Pandemic',
+      author: 'Michael Priestley',
+      url: 'https://www.studentmindsblog.co.uk/search?updated-max=2020-07-06T12:30:00%2B01:00&max-results=2',
+      likes: 12
+    }
+
+    await api.post('/api/blogs')
+      .send(newBlog)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    const blogsAtEnd = await helper.blogsInDB()
+    expect(blogsAtEnd.length).toBe(helper.initialBlogs.length + 1)
+
+    const titles = blogsAtEnd.map(blog => blog.title)
+    expect(titles).toContain('Adjusting to Increased Digital Communication Since the Pandemic')
   })
 })
 
