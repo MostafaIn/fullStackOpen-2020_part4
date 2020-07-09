@@ -17,7 +17,8 @@ beforeEach( async () => {
   }
 })
 
-describe('BLOG API', () => {
+
+describe('when there is initially some blogs saved', () => {
   test('The blog list application returns the correct amount of blog posts in the JSON format.', async () => {
     const res = await api.get('/api/blogs')
 
@@ -26,11 +27,42 @@ describe('BLOG API', () => {
 
   test('the unique identifier property of the blog posts is named id, by default the database names the property _id.', async () => {
     const res = await api.get('/api/blogs')
+
     res.body.forEach( blog => {
       expect(blog.id).toBeDefined()
       expect(blog._id).not.toBeDefined()
     })
   })
+})
+
+
+describe('viewing a specific blog', () => {
+  test('succeeds with a valid id', async () => {
+    const blogs = await helper.blogsInDB()
+    const targetBlog = blogs[0]
+
+    const res = await api.get(`/api/blogs/${targetBlog.id}`)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    expect(res.body).toEqual(targetBlog)
+  })
+
+  test('fails with statuscode 404 if blog does not exist', async () => {
+    const id = await helper.nonExistingId()
+    await api.get(`/api/blogs/${id}`)
+      .expect(404)
+  })
+
+  test('fails with statuscode 400 id is invalid', async () => {
+    const invalidId = '12345qaz'
+    await api.get(`/api/blogs/${invalidId}`)
+      .expect(400)
+  })
+})
+
+
+describe('addition of a new blog', () => {
 
   test('Blog without title, author or url is not added', async () => {
     const newBlog = {
@@ -64,6 +96,10 @@ describe('BLOG API', () => {
     expect(titles).toContain('Adjusting to Increased Digital Communication Since the Pandemic')
   })
 
+  test('fails with status code 400 if data invaild', async () => {
+
+  })
+
   test('The likes property is missing from the request, it will default to the value 0.', async () => {
     const newBlog = {
       title: 'How Managing My Mental Illness Changed My Life After Graduation',
@@ -93,5 +129,38 @@ describe('BLOG API', () => {
       .expect('Content-Type', /application\/json/)
   })
 })
+
+
+describe('deletion of a blog', () => {
+  test('succeeds with status code 204 if id is valid', async () => {
+    const blogs = await helper.blogsInDB()
+    const targetBlog = blogs[0]
+
+    await api.delete(`/api/blogs/${targetBlog.id}`)
+      .expect(204)
+
+    const blogsAtEnd = await helper.blogsInDB()
+    expect(blogsAtEnd).toHaveLength( helper.initialBlogs.length - 1)
+  })
+})
+
+
+describe('updating a blog', () => {
+  test('update the amount of likes for a blog post', async () => {
+    const blogs = await helper.blogsInDB()
+    const targetBlog = blogs[0]
+    targetBlog.likes += 1
+
+    await api.put(`/api/blogs/${targetBlog.id}`)
+      .send(targetBlog)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    const updatedBlog = await helper.blogsInDB()
+    expect(updatedBlog[0].likes).toBe(helper.initialBlogs[0].likes + 1)
+
+  })
+})
+
 
 afterAll(() => mongoose.connection.close())
