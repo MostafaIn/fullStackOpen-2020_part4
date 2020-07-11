@@ -26,7 +26,7 @@ const mostBlogs = list => {
   return { author, blogs }
 }
 
-const mostLikes = list =>{
+const mostLikes = list => {
   if (list.length < 1) {
     return null
   }
