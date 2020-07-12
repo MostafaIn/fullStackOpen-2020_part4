@@ -42,6 +42,12 @@ blogRouter.post('/', async (req, res) => {
 })
 
 blogRouter.delete('/:id', async (req, res) => {
+  const blog = await Blog.findById(req.params.id)
+  const decodedToken = jwt.verify(req.token, process.env.SECRET)
+
+  if(blog.user.toString() !== decodedToken.id.toString() ){
+    return res.status(401).json({ error: 'permission denied!' })
+  }
   await Blog.findByIdAndRemove(req.params.id)
   res.status(204).end()
 })
