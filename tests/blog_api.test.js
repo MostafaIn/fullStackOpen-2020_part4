@@ -68,8 +68,16 @@ describe('addition of a new blog', () => {
     const newBlog = {
       likes: 10
     }
+
+    const res = await api.post('/api/login').send({
+      username:'root',
+      password:'secureKEY'
+    })
+    const token = res.body.token
+
     await api.post('/api/blogs')
       .send(newBlog)
+      .set({ 'Authorization': `bearer ${token}` })
       .expect(400)
 
     const blogsAtEnd = await helper.blogsInDB()
@@ -84,8 +92,15 @@ describe('addition of a new blog', () => {
       likes: 12
     }
 
+    const res = await api.post('/api/login').send({
+      username:'root',
+      password:'secureKEY'
+    })
+    const token = res.body.token
+
     await api.post('/api/blogs')
       .send(newBlog)
+      .set({ 'Authorization': `bearer ${token}` })
       .expect(200)
       .expect('Content-Type', /application\/json/)
 
@@ -107,8 +122,15 @@ describe('addition of a new blog', () => {
       url: 'https://www.studentmindsblog.co.uk/search?updated-max=2020-07-06T12:30:00%2B01:00&max-results=2',
     }
 
+    const response = await api.post('/api/login').send({
+      username:'root',
+      password:'secureKEY'
+    })
+    const token = response.body.token
+
     const res = await api.post('/api/blogs')
       .send(newBlog)
+      .set({ 'Authorization': `bearer ${token}` })
       .expect(200)
       .expect('Content-Type', /application\/json/)
 
@@ -123,7 +145,14 @@ describe('addition of a new blog', () => {
       likes: 1
     }
 
+    const res = await api.post('/api/login').send({
+      username:'root',
+      password:'secureKEY'
+    })
+    const token = res.body.token
+
     await api.post('/api/blogs')
+      .set({ 'Authorization': `bearer ${token}` })
       .send(newBlog)
       .expect(400)
       .expect('Content-Type', /application\/json/)
@@ -133,14 +162,33 @@ describe('addition of a new blog', () => {
 
 describe('deletion of a blog', () => {
   test('succeeds with status code 204 if id is valid', async () => {
-    const blogs = await helper.blogsInDB()
-    const targetBlog = blogs[0]
+    const newBlog = {
+      title: 'How Managing My Mental Illness Changed My Life After Graduation',
+      author: 'Amanda Jerelyn',
+      url: 'https://www.studentmindsblog.co.uk/search?updated-max=2020-07-06T12:30:00%2B01:00&max-results=2',
+    }
+
+    const res = await api.post('/api/login').send({
+      username:'root',
+      password:'secureKEY'
+    })
+    const token = res.body.token
+
+    const response = await api.post('/api/blogs')
+      .set({ 'Authorization': `bearer ${token}` })
+      .send(newBlog)
+      .expect(200)
+      .expect('Content-Type', /application\/json/)
+
+    const targetBlog = response.body
+
 
     await api.delete(`/api/blogs/${targetBlog.id}`)
+      .set({ 'Authorization': `bearer ${token}` })
       .expect(204)
 
     const blogsAtEnd = await helper.blogsInDB()
-    expect(blogsAtEnd).toHaveLength( helper.initialBlogs.length - 1)
+    expect(blogsAtEnd).toHaveLength( helper.initialBlogs.length)
   })
 })
 
